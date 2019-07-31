@@ -19,6 +19,7 @@ VALUE Appsignal;
 VALUE Extension;
 VALUE Transaction;
 VALUE Data;
+VALUE Span;
 
 static VALUE start(VALUE self) {
   appsignal_start();
@@ -545,6 +546,137 @@ static VALUE data_to_s(VALUE self) {
   }
 }
 
+static VALUE root_span_new(VALUE self, VALUE name) {
+  appsignal_span_t* span;
+
+  Check_Type(name, T_STRING);
+
+  span = appsignal_create_root_span(make_appsignal_string(name));
+
+  if (span) {
+    return Data_Wrap_Struct(Span, NULL, appsignal_free_span, span);
+  } else {
+    return Qnil;
+  }
+}
+
+static VALUE child_span_new(VALUE self, VALUE name, VALUE trace_id, VALUE parent_span_id) {
+  appsignal_span_t* span;
+
+  Check_Type(name, T_STRING);
+  Check_Type(trace_id, T_STRING);
+  Check_Type(parent_span_id, T_STRING);
+
+  span = appsignal_create_child_span(
+      make_appsignal_string(name),
+      make_appsignal_string(trace_id),
+      make_appsignal_string(parent_span_id)
+  );
+
+  if (span) {
+    return Data_Wrap_Struct(Span, NULL, appsignal_free_span, span);
+  } else {
+    return Qnil;
+  }
+}
+
+static VALUE span_trace_id(VALUE self) {
+  appsignal_span_t* span;
+
+  Data_Get_Struct(self, appsignal_span_t, span);
+
+  return make_ruby_string(appsignal_trace_id(span));
+}
+
+static VALUE span_id(VALUE self) {
+  appsignal_span_t* span;
+
+  Data_Get_Struct(self, appsignal_span_t, span);
+
+  return make_ruby_string(appsignal_span_id(span));
+}
+
+static VALUE set_span_attribute_string(VALUE self, VALUE key, VALUE value) {
+  appsignal_span_t* span;
+
+  Check_Type(key, T_STRING);
+  Check_Type(value, T_STRING);
+
+  Data_Get_Struct(self, appsignal_span_t, span);
+
+  appsignal_set_span_attribute_string(
+    span,
+    make_appsignal_string(key),
+    make_appsignal_string(value)
+  );
+
+  return Qnil;
+}
+
+static VALUE set_span_attribute_int(VALUE self, VALUE key, VALUE value) {
+  appsignal_span_t* span;
+  VALUE value_type = TYPE(value);
+
+  Check_Type(key, T_STRING);
+
+  if (value_type != T_FIXNUM && value_type != T_BIGNUM) {
+    rb_raise(rb_eTypeError, "wrong argument type %s (expected Integer)", rb_obj_classname(value));
+  }
+
+  Data_Get_Struct(self, appsignal_span_t, span);
+
+  appsignal_set_span_attribute_int(
+    span,
+    make_appsignal_string(key),
+    NUM2LONG(value)
+  );
+
+  return Qnil;
+}
+
+static VALUE set_span_attribute_bool(VALUE self, VALUE key, VALUE value) {
+  appsignal_span_t* span;
+
+  Check_Type(key, T_STRING);
+
+  Data_Get_Struct(self, appsignal_span_t, span);
+
+  appsignal_set_span_attribute_bool(
+    span,
+    make_appsignal_string(key),
+    RTEST(value)
+  );
+
+  return Qnil;
+}
+
+static VALUE set_span_attribute_double(VALUE self, VALUE key, VALUE value) {
+  appsignal_span_t* span;
+
+  Check_Type(key, T_STRING);
+  Check_Type(value, T_FLOAT);
+
+  Data_Get_Struct(self, appsignal_span_t, span);
+
+  appsignal_set_span_attribute_double(
+    span,
+    make_appsignal_string(key),
+    NUM2DBL(value)
+  );
+
+  return Qnil;
+}
+
+static VALUE close_span(VALUE self, VALUE key, VALUE value) {
+  appsignal_span_t* span;
+
+  Data_Get_Struct(self, appsignal_span_t, span);
+
+  appsignal_close_span(span);
+
+  return Qnil;
+}
+
 static VALUE set_gauge(VALUE self, VALUE key, VALUE value, VALUE tags) {
   appsignal_data_t* tags_data;
 
@@ -652,6 +784,7 @@ void Init_appsignal_extension(void) {
   Extension = rb_define_class_under(Appsignal, "Extension", rb_cObject);
   Transaction = rb_define_class_under(Extension, "Transaction", rb_cObject);
   Data = rb_define_class_under(Extension, "Data", rb_cObject);
+  Span = rb_define_class_under(Extension, "Span", rb_cObject);
 
   // Starting and stopping
   rb_define_singleton_method(Extension, "start",    start,    0);
@@ -704,6 +837,23 @@ void Init_appsignal_extension(void) {
 
   // Get JSON content of a data
   rb_define_method(Data, "to_s", data_to_s, 0);
+
+  // Create a span
+  rb_define_singleton_method(Span, "root", root_span_new, 1);
+  rb_define_singleton_method(Span, "child", child_span_new, 3);
+
+  // Get trace and parent span id
+  rb_define_method(Span, "trace_id", span_trace_id, 0);
+  rb_define_method(Span, "span_id", span_id, 0);
+
+  // Set attributes on a span
+  rb_define_method(Span, "set_attribute_string", set_span_attribute_string, 2);
+  rb_define_method(Span, "set_attribute_int",    set_span_attribute_int,    2);
+  rb_define_method(Span, "set_attribute_bool",   set_span_attribute_bool,   2);
+  rb_define_method(Span, "set_attribute_double", set_span_attribute_string, 2);
+
+  // Close span
+  rb_define_method(Span, "close", close_span, 0);
 
   // Other helper methods
   rb_define_singleton_method(Extension, "install_allocation_event_hook", install_allocation_event_hook, 0);
