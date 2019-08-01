@@ -850,7 +850,7 @@ void Init_appsignal_extension(void) {
   rb_define_method(Span, "set_attribute_string", set_span_attribute_string, 2);
   rb_define_method(Span, "set_attribute_int",    set_span_attribute_int,    2);
   rb_define_method(Span, "set_attribute_bool",   set_span_attribute_bool,   2);
-  rb_define_method(Span, "set_attribute_double", set_span_attribute_string, 2);
+  rb_define_method(Span, "set_attribute_double", set_span_attribute_double, 2);
 
   // Close span
   rb_define_method(Span, "close", close_span, 0);
