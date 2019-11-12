@@ -596,6 +596,44 @@ static VALUE span_id(VALUE self) {
   return make_ruby_string(appsignal_span_id(span));
 }
 
+static VALUE add_span_error(VALUE self, VALUE name, VALUE message, VALUE backtrace) {
+  appsignal_span_t* span;
+  appsignal_data_t* backtrace_data;
+
+  Check_Type(name, T_STRING);
+  Check_Type(message, T_STRING);
+  Check_Type(backtrace, RUBY_T_DATA);
+
+  Data_Get_Struct(self, appsignal_span_t, span);
+  Data_Get_Struct(backtrace, appsignal_data_t, backtrace_data);
+
+  appsignal_add_span_error(
+      span,
+      make_appsignal_string(name),
+      make_appsignal_string(message),
+      backtrace_data
+  );
+  return Qnil;
+}
+
+static VALUE set_span_sample_data(VALUE self, VALUE key, VALUE payload) {
+  appsignal_span_t* span;
+  appsignal_data_t* payload_data;
+
+  Check_Type(key, T_STRING);
+  Check_Type(payload, RUBY_T_DATA);
+
+  Data_Get_Struct(self, appsignal_span_t, span);
+  Data_Get_Struct(payload, appsignal_data_t, payload_data);
+
+  appsignal_set_span_sample_data(
+      span,
+      make_appsignal_string(key),
+      payload_data
+  );
+  return Qnil;
+}
+
 static VALUE set_span_attribute_string(VALUE self, VALUE key, VALUE value) {
   appsignal_span_t* span;
 
@@ -845,6 +883,12 @@ void Init_appsignal_extension(void) {
   // Get trace and parent span id
   rb_define_method(Span, "trace_id", span_trace_id, 0);
   rb_define_method(Span, "span_id", span_id, 0);
+
+  // Set span error
+  rb_define_method(Span, "add_error", add_span_error, 3);
+
+  // Set span sample data
+  rb_define_method(Span, "set_sample_data", set_span_sample_data, 2);
 
   // Set attributes on a span
   rb_define_method(Span, "set_attribute_string", set_span_attribute_string, 2);

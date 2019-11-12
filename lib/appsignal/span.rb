@@ -22,6 +22,32 @@ module Appsignal
       @ext.span_id
     end
 
+    def add_error(error)
+      unless error.is_a?(Exception)
+        Appsignal.logger.error "Appsignal::Span#add_error: Cannot add error. " \
+          "The given value is not an exception: #{error.inspect}"
+        return
+      end
+      return unless error
+
+      backtrace = cleaned_backtrace(error.backtrace)
+      @ext.add_error(
+        error.class.name,
+        error.message.to_s,
+        backtrace ? Appsignal::Utils::Data.generate(backtrace) : Appsignal::Extension.data_array_new
+      )
+    end
+
+    def set_sample_data(key, data)
+      return unless key && data && (data.is_a?(Array) || data.is_a?(Hash))
+      @ext.set_sample_data(
+        key.to_s,
+        Appsignal::Utils::Data.generate(data)
+      )
+    rescue RuntimeError => e
+      Appsignal.logger.error("Error generating data (#{e.class}: #{e.message}) for '#{data.inspect}'")
+    end
+
     def []=(key, value)
       case value
       when String
@@ -46,6 +72,15 @@ module Appsignal
 
     def close
       @ext.close
+    end
+
+    # Dupe of one in transaction
+    def cleaned_backtrace(backtrace)
+      if defined?(::Rails) && backtrace
+        ::Rails.backtrace_cleaner.clean(backtrace, nil)
+      else
+        backtrace
+      end
     end
   end
 end
