@@ -596,6 +596,28 @@ static VALUE span_id(VALUE self) {
   return make_ruby_string(appsignal_span_id(span));
 }
 
+static VALUE set_span_name(VALUE self, VALUE name) {
+  appsignal_span_t* span;
+
+  Check_Type(name, T_STRING);
+
+  Data_Get_Struct(self, appsignal_span_t, span);
+
+  appsignal_set_span_name(span, make_appsignal_string(name));
+  return Qnil;
+}
+
+static VALUE set_span_namespace(VALUE self, VALUE namespace) {
+  appsignal_span_t* span;
+
+  Check_Type(namespace, T_STRING);
+
+  Data_Get_Struct(self, appsignal_span_t, span);
+
+  appsignal_set_span_namespace(span, make_appsignal_string(namespace));
+  return Qnil;
+}
+
 static VALUE add_span_error(VALUE self, VALUE name, VALUE message, VALUE backtrace) {
   appsignal_span_t* span;
   appsignal_data_t* backtrace_data;
@@ -889,6 +911,10 @@ void Init_appsignal_extension(void) {
 
   // Set span sample data
   rb_define_method(Span, "set_sample_data", set_span_sample_data, 2);
+
+  // Span name and namespace
+  rb_define_method(Span, "set_name", set_span_name, 1);
+  rb_define_method(Span, "set_namespace", set_span_namespace, 1);
 
   // Set attributes on a span
   rb_define_method(Span, "set_attribute_string", set_span_attribute_string, 2);
