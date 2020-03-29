@@ -546,12 +546,12 @@ static VALUE data_to_s(VALUE self) {
   }
 }
 
-static VALUE root_span_new(VALUE self, VALUE name) {
+static VALUE root_span_new(VALUE self, VALUE namespace) {
   appsignal_span_t* span;
 
-  Check_Type(name, T_STRING);
+  Check_Type(namespace, T_STRING);
 
-  span = appsignal_create_root_span(make_appsignal_string(name));
+  span = appsignal_create_root_span(make_appsignal_string(namespace));
 
   if (span) {
     return Data_Wrap_Struct(Span, NULL, appsignal_free_span, span);
@@ -560,15 +560,13 @@ static VALUE root_span_new(VALUE self, VALUE name) {
   }
 }
 
-static VALUE child_span_new(VALUE self, VALUE name, VALUE trace_id, VALUE parent_span_id) {
+static VALUE child_span_new(VALUE self, VALUE trace_id, VALUE parent_span_id) {
   appsignal_span_t* span;
 
-  Check_Type(name, T_STRING);
   Check_Type(trace_id, T_STRING);
   Check_Type(parent_span_id, T_STRING);
 
   span = appsignal_create_child_span(
-      make_appsignal_string(name),
       make_appsignal_string(trace_id),
       make_appsignal_string(parent_span_id)
   );
@@ -604,17 +602,6 @@ static VALUE set_span_name(VALUE self, VALUE name) {
   Data_Get_Struct(self, appsignal_span_t, span);
 
   appsignal_set_span_name(span, make_appsignal_string(name));
-  return Qnil;
-}
-
-static VALUE set_span_namespace(VALUE self, VALUE namespace) {
-  appsignal_span_t* span;
-
-  Check_Type(namespace, T_STRING);
-
-  Data_Get_Struct(self, appsignal_span_t, span);
-
-  appsignal_set_span_namespace(span, make_appsignal_string(namespace));
   return Qnil;
 }
 
@@ -900,7 +887,7 @@ void Init_appsignal_extension(void) {
 
   // Create a span
   rb_define_singleton_method(Span, "root", root_span_new, 1);
-  rb_define_singleton_method(Span, "child", child_span_new, 3);
+  rb_define_singleton_method(Span, "child", child_span_new, 2);
 
   // Get trace and parent span id
   rb_define_method(Span, "trace_id", span_trace_id, 0);
@@ -914,7 +901,6 @@ void Init_appsignal_extension(void) {
 
   // Span name and namespace
   rb_define_method(Span, "set_name", set_span_name, 1);
-  rb_define_method(Span, "set_namespace", set_span_namespace, 1);
 
   // Set attributes on a span
   rb_define_method(Span, "set_attribute_string", set_span_attribute_string, 2);

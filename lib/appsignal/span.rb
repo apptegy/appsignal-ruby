@@ -2,16 +2,16 @@ module Appsignal
   # TODO this doesn't need to be a wrapper, we can extend the class
   # from the C api.
   class Span
-    def initialize(name=nil, trace_id=nil, parent_span_id=nil)
+    def initialize(namespace=nil, trace_id=nil, parent_span_id=nil)
       @ext = if trace_id && parent_span_id
-               Appsignal::Extension::Span.child(name || '', trace_id, parent_span_id)
+               Appsignal::Extension::Span.child(trace_id, parent_span_id)
              else
-               Appsignal::Extension::Span.root(name || '')
+               Appsignal::Extension::Span.root(namespace || '')
              end
     end
 
-    def child(name=nil)
-      Appsignal::Span.new(name, trace_id, span_id)
+    def child
+      Appsignal::Span.new(nil, trace_id, span_id)
     end
 
     def trace_id
@@ -50,10 +50,6 @@ module Appsignal
 
     def name=(value)
       @ext.set_name(value)
-    end
-
-    def namespace=(value)
-      @ext.set_namespace(value)
     end
 
     def []=(key, value)
