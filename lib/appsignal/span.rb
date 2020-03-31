@@ -42,7 +42,7 @@ module Appsignal
       return unless key && data && (data.is_a?(Array) || data.is_a?(Hash))
       @ext.set_sample_data(
         key.to_s,
-        Appsignal::Utils::Data.generate(data)
+        Appsignal::Utils::Data.generate(data, true)
       )
     rescue RuntimeError => e
       Appsignal.logger.error("Error generating data (#{e.class}: #{e.message}) for '#{data.inspect}'")
