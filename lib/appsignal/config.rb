@@ -40,6 +40,7 @@ module Appsignal
       :enable_minutely_probes         => true,
       :ca_file_path                   => File.expand_path(File.join("../../../resources/cacert.pem"), __FILE__),
       :dns_servers                    => [],
+      :filter_data_keys               => [],
       :files_world_accessible         => true,
       :transaction_debug_mode         => false
     }.freeze
