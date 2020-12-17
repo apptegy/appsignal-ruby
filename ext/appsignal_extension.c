@@ -592,22 +592,6 @@ static VALUE child_span_new(VALUE self) {
   }
 }
 
-static VALUE span_trace_id(VALUE self) {
-  appsignal_span_t* span;
-
-  Data_Get_Struct(self, appsignal_span_t, span);
-
-  return make_ruby_string(appsignal_trace_id(span));
-}
-
-static VALUE span_id(VALUE self) {
-  appsignal_span_t* span;
-
-  Data_Get_Struct(self, appsignal_span_t, span);
-
-  return make_ruby_string(appsignal_span_id(span));
-}
-
 static VALUE set_span_name(VALUE self, VALUE name) {
   appsignal_span_t* span;
 
@@ -903,10 +887,6 @@ void Init_appsignal_extension(void) {
   // Create a span
   rb_define_singleton_method(Span, "root", root_span_new, 1);
   rb_define_method(Span, "child", child_span_new, 0);
-
-  // Get trace and parent span id
-  rb_define_method(Span, "trace_id", span_trace_id, 0);
-  rb_define_method(Span, "span_id", span_id, 0);
 
   // Set span error
   rb_define_method(Span, "add_error", add_span_error, 3);
