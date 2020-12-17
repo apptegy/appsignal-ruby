@@ -15,7 +15,7 @@ static inline VALUE make_ruby_string(appsignal_string_t string) {
   } else {
     VALUE str = rb_str_new(string.buf, string.len);
     rb_enc_associate(str, rb_utf8_encoding());
-    free(string.buf);
+    free(&string.buf);
     return str;
   }
 }
@@ -577,16 +577,13 @@ static VALUE root_span_new(VALUE self, VALUE namespace) {
   }
 }
 
-static VALUE child_span_new(VALUE self, VALUE trace_id, VALUE parent_span_id) {
+static VALUE child_span_new(VALUE self) {
+  appsignal_span_t* parent;
   appsignal_span_t* span;
 
-  Check_Type(trace_id, T_STRING);
-  Check_Type(parent_span_id, T_STRING);
+  Data_Get_Struct(self, appsignal_span_t, parent);
 
-  span = appsignal_create_child_span(
-      make_appsignal_string(trace_id),
-      make_appsignal_string(parent_span_id)
-  );
+  span = appsignal_create_child_span(parent);
 
   if (span) {
     return Data_Wrap_Struct(Span, NULL, appsignal_free_span, span);
@@ -905,7 +902,7 @@ void Init_appsignal_extension(void) {
 
   // Create a span
   rb_define_singleton_method(Span, "root", root_span_new, 1);
-  rb_define_singleton_method(Span, "child", child_span_new, 2);
+  rb_define_method(Span, "child", child_span_new, 0);
 
   // Get trace and parent span id
   rb_define_method(Span, "trace_id", span_trace_id, 0);
