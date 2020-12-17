@@ -10,9 +10,14 @@ static inline appsignal_string_t make_appsignal_string(VALUE str) {
 }
 
 static inline VALUE make_ruby_string(appsignal_string_t string) {
-  VALUE str = rb_str_new(string.buf, string.len);
-  rb_enc_associate(str, rb_utf8_encoding());
-  return str;
+  if (string.buf == NULL) {
+    return Qnil;
+  } else {
+    VALUE str = rb_str_new(string.buf, string.len);
+    rb_enc_associate(str, rb_utf8_encoding());
+    free(string.buf);
+    return str;
+  }
 }
 
 VALUE Appsignal;
