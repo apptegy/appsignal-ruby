@@ -583,11 +583,7 @@ module Appsignal
         end
 
         def rails_app?
-          require "rails"
-          require File.expand_path(File.join(Dir.pwd, "config", "application.rb"))
-          true
-        rescue LoadError
-          false
+          defined?(Rails)
         end
       end
     end
